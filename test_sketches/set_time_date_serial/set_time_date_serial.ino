@@ -70,7 +70,7 @@ void setup() {
   bool clockErrorFlag = true;
   while (clockErrorFlag){
     // Check that real time clock has a reasonable time value
-    if ( (now.year() < 2022) | (now.year() > 2035) ) {
+    if ( (now.year() < 2023) | (now.year() > 2035) ) {
         Serial.println("Please set clock to current UTC time");
         Serial.println("Use format SETDATE YYYY-MM-DD HH:MM:SS");
        // Error, clock isn't set
