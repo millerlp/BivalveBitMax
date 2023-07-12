@@ -51,7 +51,7 @@ uint32_t heartBuffer[HEART_SAMPLE_LENGTH] = {0}; // array to save heart measurem
  *  A value of 2 would sample every even-numbered minute
  *  A value of 5 would sample every 5 minutes
  */
-unsigned int gapeMinute = 2;
+unsigned int gapeMinute = 1;
 bool writeGapeFlag = false; // Used to flag whether to write new hall data to SD
 
 // -------------------------------------------
@@ -263,6 +263,12 @@ void setup() {
   } else {
 //    oled.println("Heart sensor fail");
     Serial.println(F("Did not find MAX heart sensor"));
+    for (int c = 0; c < 10; c++){
+      digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
+      delay(250);
+      digitalWrite(REDLED,HIGH); // turn off
+      delay(500);
+    }
     digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
   }
   
