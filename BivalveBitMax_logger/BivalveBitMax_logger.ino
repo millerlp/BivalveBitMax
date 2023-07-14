@@ -39,7 +39,9 @@
  *  A value of 5 would sample every 5 minutes
  */
 unsigned int heartMinute = 2; 
-#define HEART_SAMPLE_LENGTH 240 // Number of heart samples to take in 1 minute (480 @ 8Hz = 1minute, 240 @ 8Hz = 30sec)
+// Define number of heart samples to take in 1 minute 
+// (240 @ 8Hz = 30sec, 360 = 45sec, 480 @ 8Hz = 1minute)
+#define HEART_SAMPLE_LENGTH 240 
 unsigned int heartCount = 0; // Current number of heart samples taken in this minute
 uint32_t heartBuffer[HEART_SAMPLE_LENGTH] = {0}; // array to save heart measurements before writing to SD
 
@@ -116,7 +118,10 @@ int adcRange = 4096; //Options: 2048, 4096, 8192, 16384. 4096 is standard
 float tempC;    // output variable for temperature from MAX3010x
 
 // Prototype for the restartAndSampleMAX3010x function (see full function at bottom of file)
-uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, byte sampleAverage, byte ledMode, int sampleRate, int pulseWidth, int adcRange, byte REDledBrightness, bool EnableTemp=false);
+uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, \
+                                  byte sampleAverage, byte ledMode, int sampleRate,\
+                                  int pulseWidth, int adcRange, byte REDledBrightness,\
+                                  bool EnableTemp=false);
 /************************************************************
  * Hall effect sensor definitions
  ************************************************************/
@@ -379,9 +384,9 @@ void loop() {
             HallValue = readWakeHall(ANALOG_IN, HALL_SLEEP); 
             
             // Enable the MAX3010x sensor so we can get the temperature 
-            uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, \
-                  byte sampleAverage, byte ledMode, int sampleRate, int pulseWidth, \
-                  int adcRange, byte REDledBrightness, bool EnableTemp=true);
+            uint32_t junk = restartAndSampleMAX3010x(max3010x, IRledBrightness, \
+                  sampleAverage, ledMode, sampleRate, pulseWidth, \
+                  adcRange, REDledBrightness, true);
             tempC = max3010x.readTemperature();  // May take at least 29ms, up to 100ms
                                                       
   
@@ -804,7 +809,9 @@ void readCommand() {
  * from a hard power-down and restart. Take 1 sample and return the
  * uint32_t 4-byte value from the IR channel
  **********************************************************************/
-uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, byte sampleAverage, byte ledMode, int sampleRate, int pulseWidth, int adcRange, byte REDledBrightness, bool EnableTemp=false)
+uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, byte sampleAverage, \
+                                  byte ledMode, int sampleRate, int pulseWidth, int adcRange, \
+                                  byte REDledBrightness, bool EnableTemp)
 {
     uint32_t heartValue = 0;
 
