@@ -40,8 +40,8 @@
  */
 unsigned int heartMinute = 2; 
 // Define number of heart samples to take in 1 minute 
-// (240 @ 8Hz = 30sec, 360 = 45sec, 480 @ 8Hz = 1minute)
-#define HEART_SAMPLE_LENGTH 360 
+// (240 @ 8Hz = 30sec, 360 = 45sec, 400 @ 8 Hz = 50 sec, 480 @ 8Hz = 1minute)
+#define HEART_SAMPLE_LENGTH 400 
 unsigned int heartCount = 0; // Current number of heart samples taken in this minute
 uint32_t heartBuffer[HEART_SAMPLE_LENGTH] = {0}; // array to save heart measurements before writing to SD
 
