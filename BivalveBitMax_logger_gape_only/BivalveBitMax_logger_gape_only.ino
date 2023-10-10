@@ -133,7 +133,7 @@ unsigned int HallValue = 0; // Variable for Hall sensor reading
 ** Declare global variables and instantiate classes for MCP79400 real time clock                                              
 *   This library is written for the MCP7940, but works with the BivalveBit MCP79400
 ***************************************************************************************************/
-MCP7940_Class MCP7940;                           // Create an instance of the MCP7940
+MCP7940_Class MCP7940;                           // Create an instance of the MCP7940 . check time
 
 const uint32_t SERIAL_SPEED{57600};     // Set the baud rate for Serial I/O
 const uint8_t  SPRINTF_BUFFER_SIZE{32};  // Buffer size for sprintf()
