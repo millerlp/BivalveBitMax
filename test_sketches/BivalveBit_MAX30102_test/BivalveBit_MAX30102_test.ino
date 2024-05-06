@@ -6,6 +6,10 @@
  *  adapter. You either need to include a Li-Ion battery plugged
  *  into the board, or use a 5V FTDI-USB adapter to power the
  *  BivalveBit for testing. 
+ *  
+ *  Outputs a stream of raw values from the heart sensor to the
+ *  Serial port, appropriate for visualizing with the Arduino Serial Plotter
+ *  window (at 57600 baud). 
  * 
  */
 
