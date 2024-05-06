@@ -290,7 +290,11 @@ void loop() {
             // 1-minute sleep cycle
             unsigned long firstmillis = millis();
             digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
-            
+            // Flash the green LED briefly, this also gives the voltage regulator time to 
+            // stabilize
+            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
+            delayMicroseconds(150); // Give voltage regulator time to stabilize
+            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
             batteryVolts = readBatteryVoltage(BATT_MONITOR_EN, BATT_MONITOR,\
                                                 dividerRatio, refVoltage);
   //        Serial.print("Battery: ");Serial.print(batteryVolts,2);Serial.println("V");delay(10);
