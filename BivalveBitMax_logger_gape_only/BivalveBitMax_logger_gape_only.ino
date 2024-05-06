@@ -1,11 +1,9 @@
-/* BivalveBitMax_logger.ino
+/* BivalveBitMax_logger_gape_only.ino
  *  BivalveBit data logger program with sleep modes and
  *  state machine to run things. Designed for use with 
- *  MAX3010x heart sensor and Allegro A1395 Hall effect sensor
+ *  Allegro A1395 Hall effect sensor to just record bivalve shell gape. 
  *  
- *  Samples gape sensor every minute. Set the heart
- *  sampling interval by changing the value for the variable heartMinute
- *  below.
+ *  Samples gape sensor every minute. 
  *  
  *  If the device just slowly flashes red after startup, the real time clock
  *  needs to be reset. Open the serial monitor and enter the correct date and
@@ -26,24 +24,7 @@
 //#include "SSD1306Ascii.h" // https://github.com/greiman/SSD1306Ascii
 //#include "SSD1306AsciiWire.h" // https://github.com/greiman/SSD1306Ascii
 #include "MCP7940.h"  // https://github.com/Zanduino/MCP7940  Real time clock
-//#include "MAX30105.h"         // https://github.com/millerlp/SparkFun_MAX3010x_Sensor_Library
-
 #include "BivalveBit_lib.h" // https://github.com/millerlp/BivalveBit_lib
-
-/* Define heartMinute, to be used to set which minutes of the hour to take
- *  heart rate samples. This value will be divided into the current minute
- *  value, and if the modulo (remainder) is 0, then the heart rate sampling
- *  will be activated. 
- *  A value of 1 would sample every minute
- *  A value of 2 would sample every even-numbered minute
- *  A value of 5 would sample every 5 minutes
- */
-//unsigned int heartMinute = 2; 
-//// Define number of heart samples to take in 1 minute 
-//// (240 @ 8Hz = 30sec, 360 = 45sec, 400 @ 8 Hz = 50 sec, 480 @ 8Hz = 1minute)
-//#define HEART_SAMPLE_LENGTH 400 
-//unsigned int heartCount = 0; // Current number of heart samples taken in this minute
-//uint32_t heartBuffer[HEART_SAMPLE_LENGTH] = {0}; // array to save heart measurements before writing to SD
 
 /* Define gapeMinute, to be used to set which minutes of the hour to take
  *  gape samples. This value will be divided into the current minute
@@ -87,41 +68,15 @@ const uint8_t SD_CHIP_SELECT = 7;
 #define MISO 5
 #define SCK 6
 SdFat sd; 
-//File IRFile; //SD card object 1 (IR heart rate data)
 //File GAPEFile; //SD card object 2 (Gape, Temp, Battery voltage data)
-//SdFile IRFile; //SD card object 1 (IR heart rate data)
 SdFile GAPEFile; //SD card object 2 (Gape, Temp, Battery voltage data)
 bool SDfailFlag = false;
 // Placeholder serialNumber
 char serialNumber[] = "SN000";
 bool serialValid = false;
-// Declare initial name for output files written to SD card
-//char heartfilename[] =  "YYYYMMDD_HHMM_00_SN000_IR.csv";
+// Declare initial name for output file written to SD card
 char gapefilename[] =   "YYYYMMDD_HHMM_00_SN000_GAPE.csv";
 
-
-/************************************************************
- *  // MAX30105 heart sensor parameters
- */
-
-//MAX30105 max3010x; // MAX3010x sensor object (MAX30101, MAX30102, MAX30105 all interchangeable)
-//// sensor configurations
-//byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
-//byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
-//byte IRledBrightness = 60;  // Starting value around 60 is probably reasonable for bivalves
-//byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32, but only use 1 or 2. The others are too slow
-//int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
-//// For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
-//int sampleRate = 800; //Options: 50, 100, 200, 400, 800, 1000, 1600, 3200
-//int adcRange = 4096; //Options: 2048, 4096, 8192, 16384. 4096 is standard
-//
-//float tempC;    // output variable for temperature from MAX3010x
-//
-//// Prototype for the restartAndSampleMAX3010x function (see full function at bottom of file)
-//uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, \
-//                                  byte sampleAverage, byte ledMode, int sampleRate,\
-//                                  int pulseWidth, int adcRange, byte REDledBrightness,\
-//                                  bool EnableTemp=false);
 /************************************************************
  * Hall effect sensor definitions
  ************************************************************/
@@ -188,22 +143,6 @@ void test_pin_init(void){
     PORTD.DIR |= PIN2_bm;
 }
 
-/*****************************************************************
- * Interrupt service routine for the periodic interrupt timer,
- * used to generate 8Hz wakeup interrupts. Setup of the 8Hz timer
- * is done in BivalveBit_lib using PIT_init() function
- *****************************************************************/
-//ISR(RTC_PIT_vect)
-//{
-//    /* If you have arrived in this ISR due to a PIT interrupt, 
-//     *  You must clear PIT interrupt flag by writing '1': 
-//     */
-//    RTC.PITINTFLAGS = RTC_PI_bm; // clear the interrupt flag
-////    PORTD.OUTTGL |= PIN2_bm; // Toggle PD2 (probe with scope/analyzer)
-////    PORTC.OUTTGL |= PIN0_bm; // BivalveBit green led on pin PC0 
-//}
-
-
 
 //---------------------------------------------------------------
 //-------- Setup
@@ -254,31 +193,8 @@ void setup() {
   //---------------------------------------------------------------
   digitalWrite(VREG_EN, HIGH); // set low to turn off, high to turn on (~150usec to wake)
   delayMicroseconds(250);
-
-  /*****************************************
-   * Start up MAX3010x sensor (heart sensor)
-   *****************************************/
-//  if (max3010x.begin(Wire, I2C_SPEED_STANDARD)) //Use default I2C port, 100kHz speed
-//  {
-//    Serial.println(F("MAX heart sensor initialized"));
-//    digitalWrite(GRNLED,LOW); // set low to turn on
-//    delay(250);
-//    digitalWrite(GRNLED,HIGH); // set high to turn off
-////    oled.println("Heart sensor on");
-//  } else {
-////    oled.println("Heart sensor fail");
-//    Serial.println(F("Did not find MAX heart sensor"));
-//    for (int c = 0; c < 10; c++){
-//      digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
-//      delay(250);
-//      digitalWrite(REDLED,HIGH); // turn off
-//      delay(500);
-//    }
-//    digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
-//  }
-  
-  
-  digitalWrite(VREG_EN, LOW); // set low to turn off voltage regulator for MAX3010x and Hall sensor
+ 
+  digitalWrite(VREG_EN, LOW); // set low to turn off voltage regulator for Hall sensor
   
   /************************************************************
    *  Real Time Clock startup
@@ -301,7 +217,7 @@ void setup() {
   bool clockErrorFlag = true;
   while (clockErrorFlag){
     // Check that real time clock has a reasonable time value
-    if ( (now.year() < 2023) | (now.year() > 2035) ) {
+    if ( (now.year() < 2024) | (now.year() > 2035) ) {
         Serial.println("Please set clock to current UTC time");
         Serial.println("Use format SETDATE YYYY-MM-DD HH:MM:SS");
        // Error, clock isn't set
@@ -310,7 +226,7 @@ void setup() {
         delay(500);
         readCommand();
         now = MCP7940.now();  // get the updated time
-        if ( (now.year() >= 2023) & (now.year() <= 2035) ){
+        if ( (now.year() >= 2024) & (now.year() <= 2035) ){
           // If the year is now within bounds, break out of this while statement
           clockErrorFlag = false;
           sprintf(inputBuffer, "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(),
@@ -326,12 +242,10 @@ void setup() {
     }
   }
   oldday1 = oldday2 = now.day(); // Store current day's value
-  // Initialize two data files
-//  initHeartFileName(sd, IRFile, now, heartfilename, serialValid, serialNumber);
+  // Initialize data file
   initGapeOnlyFileName(sd, GAPEFile, now, gapefilename, serialValid, serialNumber);
   digitalWrite(REDLED, HIGH); // turn off
   Serial.print("Gape sample interval: "); Serial.print(gapeMinute); Serial.println(" minutes");
-//  Serial.print("Heart sample interval: "); Serial.print(heartMinute); Serial.println(" minutes");
   
   MCP7940Alarm1Minute(now); // Set RTC multifunction pin to alarm when new minute hits
   attachInterrupt(digitalPinToInterrupt(20),RTC1MinuteInterrupt, CHANGE); // pin 20 to RTC
@@ -382,14 +296,7 @@ void loop() {
   //        Serial.print("Battery: ");Serial.print(batteryVolts,2);Serial.println("V");delay(10);
             
             HallValue = readWakeHall(ANALOG_IN, HALL_SLEEP); 
-            
-            // Enable the MAX3010x sensor so we can get the temperature 
-//            uint32_t junk = restartAndSampleMAX3010x(max3010x, IRledBrightness, \
-//                  sampleAverage, ledMode, sampleRate, pulseWidth, \
-//                  adcRange, REDledBrightness, true);
-//            tempC = max3010x.readTemperature();  // May take at least 29ms, up to 100ms
-                                                      
-  
+
             if (batteryVolts < minimumVoltage) {
               ++lowVoltageCount; // Increment the counter
             }
@@ -400,23 +307,7 @@ void loop() {
           }
           digitalWrite(VREG_EN, LOW); // set low to turn off after sampling
 
-        
-        // Check time, decide what kind of wake interval and sampling to proceed with
-//        if ( now.minute() % heartMinute == 0) {
-//          /* If it's a heart-sampling minute change mainState to STATE_FAST_SAMPLE
-//           * to switch to 8Hz wake interval
-//          */
-//          if (lowVoltageCount < lowVoltageCountLimit) {
-//            // Continue normal sampling routine
-//            mainState = STATE_FAST_SAMPLE; // switch to fast sampling next              
-//            writeState = WRITE_HALL_TEMP_VOLTS; // Save the gape/temp/volts data at start of fast sampling
-//          } else {
-//            // The battery voltage has been low for too long, shutdown
-//            mainState = STATE_SHUTDOWN;
-//            writeState = WRITE_HALL_TEMP_VOLTS;
-//          }
-//        } else {
-          /* If it's a non-heart minute, update 1 minute wake interval,
+          /* Update 1 minute wake interval,
           * and remain in STATE_1MINUTE_SLEEP
           */    
           if ( (lowVoltageCount < lowVoltageCountLimit) & writeGapeFlag) {
@@ -438,50 +329,8 @@ void loop() {
 //          Serial.println("Staying in 1 minute sleep loop"); delay(10);
           // Re-enable 1-minute wakeup interrupt
           attachInterrupt(digitalPinToInterrupt(20),RTC1MinuteInterrupt, CHANGE); // pin 20 to RTC          
-//        }
     }
     break;
-
-//    case STATE_FAST_SAMPLE:
-//    {
-//        // If you arrive here from STATE_1MINUTE_SLEEP, the 8Hz wakeup signal should
-//        // be in effect, and the Hall sensor will already have been read, so just
-//        // take a heart sensor reading and add it to the buffer
-//        // Keep count of how many times you visit this section, and revert to 
-//        // STATE_1MINUTE_SLEEP after you've taken enough heart readings (30 or 60 seconds) 
-//
-//        // Take heart sensor sample, add it to the buffer
-//        
-//        digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
-//        // Flash the green LED briefly, this also gives the voltage regulator time to 
-//        // stabilize
-//        bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
-//        delayMicroseconds(150); // Give voltage regulator time to stabilize
-//        bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
-//
-//        /*********************************************
-//         *  Collect a sample from the MAX3010x sensor
-//         *********************************************/
-//         heartBuffer[heartCount] = restartAndSampleMAX3010x(max3010x, IRledBrightness,\
-//                  sampleAverage, ledMode, sampleRate, pulseWidth, adcRange, \
-//                  REDledBrightness, false);
-//                
-//        ++heartCount; // Increment heart sample counter
-//        digitalWrite(VREG_EN, LOW); // set low to disable voltage regulator
-//        
-////        Serial.println(heartBuffer[heartCount-1]);
-////        delay(5);
-//                
-//        // If enough samples have been taken, revert to 1 minute intervals
-//        if ( heartCount > (HEART_SAMPLE_LENGTH-1) ) {
-//          heartCount = 0; // reset for next sampling round        
-//          writeState = WRITE_HEART; // switch to write SD state 
-//          lasttimestamp = MCP7940.now(); // Store last time stamp of fast sampling run        
-//          digitalWrite(VREG_EN, LOW); // set low to disable voltage regulator
-//        }  
-//    }
-//    break;
-
 
     case STATE_SHUTDOWN:
     {
@@ -507,7 +356,7 @@ void loop() {
     case WRITE_HALL_TEMP_VOLTS:
       // You arrive here because the hall sensor, temperature and battery
       // voltage have all been sampled. Write them to SD
-//      Serial.println("Write gape, temp, volts"); delay(8);
+      Serial.print("Hall: ");Serial.println(HallValue); delay(8);
       // Check if a new day has started, start a new data file if so.
       if (now.day() != oldday1) {
         GAPEFile.close(); // close old file
@@ -523,55 +372,6 @@ void loop() {
       // The main state could be going back to 1-minute intervals or switching
       // to fast sampling heart rate, depending on what happened in the 
       // mainState switch above. Check which state we're in to decide what to do next 
-//      switch(mainState){
-//        // If we've arrived here and are switching to fast sample, activate the PIT timer
-//        case (STATE_FAST_SAMPLE):
-//          firsttimestamp = MCP7940.now(); // store value for start of IR samples
-//          detachInterrupt(digitalPinToInterrupt(20)); // Remove the current 1 minute interrupt
-////          digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator here if you wanted to 
-//                                        // make sure it's running at the very start of the fast sampling
-////          setupVCNL4040(); // reset the IR sensor after power-up of the voltage regulator
-//          MCP7940sqw32768(); // Reactivate the RTC's 32.768kHz clock output
-//
-//          PIT_init(); // set up the Periodic Interrupt Timer to wake at 8Hz (BivalveBitlib)
-//          
-//          sei();  // enable global interrupts
-//          // head to end of main loop to go to sleep
-      break;
-        
-//        case (STATE_1MINUTE_SLEEP):
-//          // If we've arrived here and it's remaining a 1-minute sleep interval, do nothing      
-//        break;
-//        default:
-//          // Do nothing in the default case
-//        break;
-//      }
-//    break;
-
-//    case WRITE_HEART:
-//      // You arrive here after doing the fast heart rate samples and filling the
-//      // buffer. Write those data to the SD card heart rate file, and then 
-//      // reset the mainState to 1-minute intervals
-//
-//      // Cancel 8Hz wakeups
-//      RTC.PITINTCTRL &= ~RTC_PI_bm; /* Periodic Interrupt: disabled, cancels 8Hz wakeup */ 
-//      
-////      Serial.println("Write heart data"); delay(8);
-//      // Check if a new day has started, if so open a new file
-//      if (firsttimestamp.day() != oldday2){
-//        IRFile.close();
-//        initHeartFileName(sd, IRFile, firsttimestamp, heartfilename, serialValid, serialNumber);
-//        oldday2 = firsttimestamp.day(); // update oldday2
-//      }
-//      
-//      writeHeartToSD(firsttimestamp,lasttimestamp); // write IR data to SD card
-//      // Revert to 1-minute wake interrupts
-//      mainState = STATE_1MINUTE_SLEEP; // reset to 1 minute sleep interval
-//      writeState = WRITE_NOTHING; // reset to write-nothing state 
-//      MCP7940Alarm1Minute(MCP7940.now()); // Reset 1 minute alarm
-//      attachInterrupt(digitalPinToInterrupt(20),RTC1MinuteInterrupt, CHANGE); // pin 20 to RTC
-//    break;
-
     default:
       // Nothing in default case
     break;
@@ -613,8 +413,8 @@ void MCP7940setup() {
     {
       Serial.println(F("Oscillator did not start, trying again."));
       delay(1000);
-    }  // of if-then oscillator didn't start
-  }    // of while the oscillator is of
+    }  // end of if-then oscillator didn't start
+  }    // end of while the oscillator is off
   MCP7940.setSQWState(false); // turn off square wave output if currently on
 
 }
@@ -625,18 +425,6 @@ void MCP7940Alarm1Minute(DateTime currentTime){
   MCP7940.setAlarmPolarity(false); // pin goes low when alarm is triggered
   Serial.println("Setting alarm for every minute at 0 seconds.");
   MCP7940.setAlarm(0, matchSeconds, currentTime - TimeSpan(0, 0, 0, currentTime.second()), true);  // Match once a minute at 0 seconds
-                   
-  
-//  DateTime currentTime2 = currentTime - TimeSpan(0, 0, 0, currentTime.second());  // Add interval to current time
-////  DateTime  dt=  currentTime - TimeSpan(0,0,0,currentTime.second() );
-////  Serial.print("Time diff = "); Serial.println(dt.unixtime());
-//   // Use sprintf() to pretty print date/time with leading zeroes
-//   char          inputBuffer2[SPRINTF_BUFFER_SIZE];  // Buffer for sprintf()/sscanf()
-//  sprintf(inputBuffer2, "%04d-%02d-%02d %02d:%02d:%02d", currentTime.year(), 
-//          currentTime2.month(), currentTime2.day(),
-//          currentTime2.hour(), currentTime2.minute(), currentTime2.second());
-//  Serial.print("Next alarm check: "); Serial.println(inputBuffer2);
-
   delay(10);
 }
 
@@ -677,42 +465,6 @@ void writeGapeToSD (DateTime timestamp) {
 }
 
 
-//------------- writeHeartToSD -----------------------------------------------
-// writeHeartToSD function. This formats the available data in the
-// data arrays and writes them to the SD card file in a
-// comma-separated value format.
-//void writeHeartToSD (DateTime firsttimestamp, DateTime lasttimestamp) {
-//  // Reopen logfile. If opening fails, notify the user
-//  if (!IRFile.isOpen()) {
-//    if (!IRFile.open(heartfilename, O_RDWR | O_CREAT | O_AT_END)) {
-//      digitalWrite(REDLED, HIGH); // turn on error LED
-//    }
-//  }
-//  for (unsigned int bufferIndex = 0; bufferIndex < HEART_SAMPLE_LENGTH; bufferIndex++){
-//      if (bufferIndex == 0) {
-//        // For first value in buffer, write first time stamp
-//        IRFile.print(firsttimestamp.unixtime(), DEC); IRFile.print(F(","));// POSIX time value
-//        printTimeToSD(IRFile, firsttimestamp); IRFile.print(F(",")); // Human readable date time
-//        IRFile.print(serialNumber); IRFile.print(F(",")); // Serial number
-//        IRFile.println(heartBuffer[bufferIndex]);         // Heart IR value
-//      } else if ( (bufferIndex > 0) & (bufferIndex < (HEART_SAMPLE_LENGTH - 1)) ){
-//        IRFile.print(",,,"); // write empty time values for most heart values
-//        IRFile.println(heartBuffer[bufferIndex]);         // Heart IR value
-//      } else if (bufferIndex == (HEART_SAMPLE_LENGTH - 1) ){
-//        // For last value in buffer, write last time stamp
-//        IRFile.print(lasttimestamp.unixtime(), DEC); IRFile.print(F(","));// POSIX time value
-//        printTimeToSD(IRFile, lasttimestamp); IRFile.print(F(",")); // Human readable date time
-//        IRFile.print(serialNumber); IRFile.print(F(",")); // Serial number
-//        IRFile.println(heartBuffer[bufferIndex]);
-//      } 
-//    
-//  }
-//  // IRFile.close(); // force the buffer to empty
-//
-//  IRFile.timestamp(T_WRITE, lasttimestamp.year(),lasttimestamp.month(), \
-//      lasttimestamp.day(),lasttimestamp.hour(),lasttimestamp.minute(),lasttimestamp.second());
-//  
-//}
 
 
 
@@ -800,60 +552,3 @@ void readCommand() {
     }                  // of if-then-else we've received full command
   }                    // of if-then there is something in our input buffer
 }  // of method readCommand
-
-
-/**********************************************************************
- * restartMAX3010x
- * 
- * Re-set the MAX3010x sampling settings, assuming it has just returned
- * from a hard power-down and restart. Take 1 sample and return the
- * uint32_t 4-byte value from the IR channel
- **********************************************************************/
-//uint32_t restartAndSampleMAX3010x(MAX30105 &max3010x, byte IRledBrightness, byte sampleAverage, \
-//                                  byte ledMode, int sampleRate, int pulseWidth, int adcRange, \
-//                                  byte REDledBrightness, bool EnableTemp)
-//{
-//    uint32_t heartValue = 0;
-//
-//    max3010x.setup(IRledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
-//    if (EnableTemp){
-//       max3010x.enableDIETEMPRDY(); //enable temp ready interrupt. Required to log temp, but each read takes 29ms
-//    }
-////   
-//    // Tweak individual settings
-//    max3010x.setPulseAmplitudeRed(REDledBrightness); // essentially turn off red LED to save power, we only want IR LED. **** commented for testing only
-//    max3010x.setPulseAmplitudeIR(IRledBrightness); // set IR led brightness to user's chosen value 0x00 (off) to 0xFF(full power)
-//    delay(6); // This delay seems to be necessary to give the sensor time to start reading reasonable values (5ms minimum)
-//    max3010x.clearFIFO(); // Clearing FIFO potentially lets you only have to grab one value from the FIFO once it starts to refill
-//    
-//    long watchdog = millis();
-//    bool sampleFlag = false;
-//    // Here we use a watchdog to make sure the collection of a new sample doesn't take
-//    // longer than our pre-defined watchdog time (in milliseconds)
-//    while( millis() - watchdog < 5) {
-//        // With a cleared FIFO these two pointers will match initially
-//        byte readPointer = max3010x.getReadPointer();
-//        byte writePointer = max3010x.getWritePointer();
-//        
-//        if (readPointer != writePointer){
-//          // If they don't match, that means a new sample arrived in the FIFO buffer on the MAX3010x
-//          sampleFlag = true;
-//          break; // escape the while loop once a new sample has appeared
-//        }
-//        delayMicroseconds(20);
-//        sampleFlag = false;
-//    }
-//    if (sampleFlag){
-//        max3010x.check();  // retrieve the new sample(s) and put them in the max3010x private buffer
-//        // Calling getIR() should get the most recent value from the buffer of values
-//        heartValue = max3010x.getIR();
-////        Serial.println(heartValue);  // modify getIR in the library to remove safeCheck() function        
-//    } else {
-//        // If sampleFlag was still false, a new sample didn't arrive from the MAX3010x sensor in time
-////        Serial.println("0");  // modify getIR in the library to remove safeCheck() function   
-//        heartValue = 0;
-//    }
-//
-//    return(heartValue); // Return the heartValue as output
-//    
-//} // end of restartAndSampleMAX3010x()
