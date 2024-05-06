@@ -1,12 +1,11 @@
 /* 6_Hall_sensor_test.ino
  *  
- *  
+ *  This will just output a stream of Hall sensor readings to the 
+ *  Serial monitor. Set the serial monitor to 57600 baud.
  *  
  *  Tested with RevB hardware, on 3V3 supply and 3.9V LiIon battery
  *  
  */
-
-//#include "MusselGapeTrackerlib.h" // https://github.com/millerlp/MusselGapeTrackerlib
 
 #define ANALOG_IN A0  // Input for Hall sensor
 #define REDLED 11   // red LED
@@ -56,7 +55,7 @@ void loop() {
   unsigned int HallValue = readHall(ANALOG_IN);
   digitalWrite(VREG_EN, LOW); // turn voltage regulator off again
   digitalWrite(HALL_SLEEP, LOW); // put hall sensor to sleep
-  Serial.println(HallValue);
+  Serial.println(HallValue); // Print result to Serial monitor
   digitalWrite(GRNLED,!digitalRead(GRNLED));
   delay(100);
 
