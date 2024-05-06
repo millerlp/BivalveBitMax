@@ -1,6 +1,5 @@
 /* BivalveBitMax_logger.ino
- *  BivalveBit data logger program with sleep modes and
- *  state machine to run things. Designed for use with 
+ *  BivalveBit data logger program designed for use with 
  *  MAX3010x heart sensor and Allegro A1395 Hall effect sensor
  *  
  *  Samples gape sensor every minute. Set the heart
@@ -11,6 +10,12 @@
  *  needs to be reset. Open the serial monitor and enter the correct date and
  *  time (in the UTC time zone preferably) using the command format:
  *  SETDATE YYYY-MM-DD HH:MM:SS
+ *  
+ *  If the device slowly flashes red 10 times at startup, the heart sensor was not detected
+ *  The device will still try to proceed with data collection (getting gape data hopefully)
+ *  but will flash red rapidly whenever it attempts to collect heart data (at every heart
+ *  sampling interval). Rapid green flashes at the heart data interval represent good (non-zero)
+ *  readings coming from the heart sensor. 
  *  
  *  
  */
@@ -108,7 +113,7 @@ MAX30105 max3010x; // MAX3010x sensor object (MAX30101, MAX30102, MAX30105 all i
 // sensor configurations
 byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green. Only use 2
 byte REDledBrightness = 1; // low value of 0 shuts it off, 1 is barely on
-byte IRledBrightness = 60;  // Starting value around 60 is probably reasonable for bivalves
+byte IRledBrightness = 30;  // Starting value around 30-60 is probably reasonable for bivalves
 byte sampleAverage = 1; //Options: 1, 2, 4, 8, 16, 32, but only use 1 or 2. The others are too slow
 int pulseWidth = 215; //Options: 69, 118, 215, 411, units microseconds. Applies to all active LEDs. Recommend 215
 // For 118us, max sampleRate = 1000; for 215us, max sampleRate = 800, for 411us, max sampleRate = 400
@@ -455,9 +460,21 @@ void loop() {
         digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
         // Flash the green LED briefly, this also gives the voltage regulator time to 
         // stabilize
-        bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
-        delayMicroseconds(150); // Give voltage regulator time to stabilize
-        bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
+        if (heartCount > 0) {
+          if (heartBuffer[ (heartCount-1)] > 0){
+            // Flash the green LED to denote successful sampling
+            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
+            delayMicroseconds(150); // Give voltage regulator time to stabilize
+            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
+          } else if (heartBuffer[ (heartCount-1)] == 0) {
+            // If the heart sensor is returning 0's (because it's not attached or malfunctioning)
+            // then flash the red LED instead
+            bitWrite(PORTC.OUT, 3, 0); // Set PC3 low to turn on red LED
+            delayMicroseconds(150); // Give voltage regulator time to stabilize
+            bitWrite(PORTC.OUT, 3, 1); // Turn off PC3 by setting pin high
+          }
+        }
+        
 
         /*********************************************
          *  Collect a sample from the MAX3010x sensor
