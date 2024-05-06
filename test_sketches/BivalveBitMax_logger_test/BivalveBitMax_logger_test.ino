@@ -420,6 +420,7 @@ void readCommand() {
             MCP7940.adjust(
                 DateTime(year, month, day, hour, minute, second));  // Adjust the RTC date/time
             Serial.println(F("Date has been set."));
+            delay(2000);
           }       // of if-then-else the date could be parsed
           break;  //
         /*******************************************************************************************
