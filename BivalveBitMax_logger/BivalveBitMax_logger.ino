@@ -381,6 +381,7 @@ void loop() {
             // 1-minute sleep cycle
             unsigned long firstmillis = millis();
             digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
+            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
             
             batteryVolts = readBatteryVoltage(BATT_MONITOR_EN, BATT_MONITOR,\
                                                 dividerRatio, refVoltage);
@@ -393,6 +394,8 @@ void loop() {
                   sampleAverage, ledMode, sampleRate, pulseWidth, \
                   adcRange, REDledBrightness, true);
             tempC = max3010x.readTemperature();  // May take at least 29ms, up to 100ms
+
+            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
                                                       
   
             if (batteryVolts < minimumVoltage) {
