@@ -256,36 +256,8 @@ void setup() {
   digitalWrite(GRNLED,LOW); // set low to turn on
   delay(500);
   digitalWrite(GRNLED,HIGH); // set high to turn off
-  //---------------------------------------------------------------
-  digitalWrite(VREG_EN, HIGH); // set low to turn off, high to turn on (~150usec to wake)
-  delayMicroseconds(250);
 
-  /*****************************************
-   * Start up MAX3010x sensor (heart sensor)
-   *****************************************/
-  if (max3010x.begin(Wire, I2C_SPEED_STANDARD)) //Use default I2C port, 100kHz speed
-  {
-    Serial.println(F("MAX heart sensor initialized"));
-    digitalWrite(GRNLED,LOW); // set low to turn on
-    delay(250);
-    digitalWrite(GRNLED,HIGH); // set high to turn off
-//    oled.println("Heart sensor on");
-  } else {
-//    oled.println("Heart sensor fail");
-    Serial.println(F("Did not find MAX heart sensor"));
-    for (int c = 0; c < 10; c++){
-      digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
-      delay(250);
-      digitalWrite(REDLED,HIGH); // turn off
-      delay(500);
-    }
-    digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
-  }
-  
-  
-  digitalWrite(VREG_EN, LOW); // set low to turn off voltage regulator for MAX3010x and Hall sensor
-  
-  /************************************************************
+   /************************************************************
    *  Real Time Clock startup
    ***********************************************************/
   MCP7940setup();
@@ -315,7 +287,7 @@ void setup() {
         delay(500);
         readCommand();
         now = MCP7940.now();  // get the updated time
-        if ( (now.year() >= 2023) & (now.year() <= 2035) ){
+        if ( (now.year() >= 2024) & (now.year() <= 2035) ){
           // If the year is now within bounds, break out of this while statement
           clockErrorFlag = false;
           sprintf(inputBuffer, "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(),
@@ -330,6 +302,44 @@ void setup() {
       clockErrorFlag = false;
     }
   }
+  
+  
+  
+  //---------------------------------------------------------------
+  // Enable voltage regulator to power MAX3010x heart sensor
+  digitalWrite(VREG_EN, HIGH); // set low to turn off, high to turn on (~150usec to wake)
+  delay(250);
+
+  /*****************************************
+   * Start up MAX3010x sensor (heart sensor)
+   *****************************************/
+  if (max3010x.begin(Wire, I2C_SPEED_STANDARD)) //Use default I2C port, 100kHz speed
+  {
+    Serial.println(F("MAX heart sensor initialized"));
+    digitalWrite(GRNLED,LOW); // set low to turn on
+    delay(250);
+    digitalWrite(GRNLED,HIGH); // set high to turn off
+//    oled.println("Heart sensor on");
+  } else {
+//    oled.println("Heart sensor fail");
+    Serial.println(F("Did not find MAX heart sensor"));
+    for (int c = 0; c < 15; c++){
+      digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
+      delay(500);
+      digitalWrite(REDLED,HIGH); // turn off
+      delay(500);
+      readCommand();
+      now = MCP7940.now();  // get the updated time
+      sprintf(inputBuffer, "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(),
+          now.hour(), now.minute(), now.second());
+      Serial.print("Date/Time: "); Serial.println(inputBuffer);
+    }
+    digitalWrite(REDLED,LOW); // set low to turn on, leave on due to the error
+  }
+  
+  digitalWrite(VREG_EN, LOW); // set low to turn off voltage regulator for MAX3010x and Hall sensor
+  
+
   oldday1 = oldday2 = now.day(); // Store current day's value
   // Initialize two data files
   initHeartFileName(sd, IRFile, now, heartfilename, serialValid, serialNumber);
@@ -381,7 +391,6 @@ void loop() {
             // 1-minute sleep cycle
             unsigned long firstmillis = millis();
             digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
-            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
             
             batteryVolts = readBatteryVoltage(BATT_MONITOR_EN, BATT_MONITOR,\
                                                 dividerRatio, refVoltage);
@@ -394,8 +403,6 @@ void loop() {
                   sampleAverage, ledMode, sampleRate, pulseWidth, \
                   adcRange, REDledBrightness, true);
             tempC = max3010x.readTemperature();  // May take at least 29ms, up to 100ms
-
-            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 by setting pin high
                                                       
   
             if (batteryVolts < minimumVoltage) {
