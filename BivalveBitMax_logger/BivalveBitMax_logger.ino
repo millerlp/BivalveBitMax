@@ -11,13 +11,17 @@
  *  time (in the UTC time zone preferably) using the command format:
  *  SETDATE YYYY-MM-DD HH:MM:SS
  *  
- *  If the device slowly flashes red 10 times at startup, the heart sensor was not detected
+ *  
+ *  If the device slowly flashes red 15 times at startup, the heart sensor was not detected
  *  The device will still try to proceed with data collection (getting gape data hopefully)
  *  but will flash red rapidly whenever it attempts to collect heart data (at every heart
  *  sampling interval). Rapid green flashes at the heart data interval represent good (non-zero)
  *  readings coming from the heart sensor. 
  *  
  *  
+ *  If you want to manually reset the clock via the Serial monitor in this program, either 
+ *  remove the backup battery temporarily to stop the clock, or unplug the heart monitor,
+ *  and use the Serial monitor to reset the time during the red LED flashing. 
  */
 
 
