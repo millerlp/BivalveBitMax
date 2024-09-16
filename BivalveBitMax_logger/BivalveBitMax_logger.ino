@@ -278,7 +278,7 @@ void setup() {
   bool clockErrorFlag = true;
   while (clockErrorFlag){
     // Check that real time clock has a reasonable time value
-    if ( (now.year() < 2022) | (now.year() > 2035) ) {
+    if ( (now.year() < 2024) | (now.year() > 2035) ) {
         Serial.println("Please set clock to current UTC time");
         Serial.println("Use format SETDATE YYYY-MM-DD HH:MM:SS");
        // Error, clock isn't set
@@ -389,6 +389,7 @@ void loop() {
             // Since a new minute just started, sample Hall & battery, and 
             // then decide whether to switch to 8Hz fast sampling or stay in 
             // 1-minute sleep cycle
+            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
             unsigned long firstmillis = millis();
             digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
             
@@ -404,7 +405,7 @@ void loop() {
                   adcRange, REDledBrightness, true);
             tempC = max3010x.readTemperature();  // May take at least 29ms, up to 100ms
                                                       
-  
+            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 (green LED) by setting pin high
             if (batteryVolts < minimumVoltage) {
               ++lowVoltageCount; // Increment the counter
             }

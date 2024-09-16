@@ -288,6 +288,7 @@ void loop() {
             // Since a new minute just started, sample Hall & battery, and 
             // then decide whether to switch to 8Hz fast sampling or stay in 
             // 1-minute sleep cycle
+            bitWrite(PORTC.OUT, 0, 0); // Set PC0 low to turn on green LED
             unsigned long firstmillis = millis();
             digitalWrite(VREG_EN, HIGH); // set high to enable voltage regulator
             // Flash the green LED briefly, this also gives the voltage regulator time to 
@@ -301,6 +302,7 @@ void loop() {
             
             HallValue = readWakeHall(ANALOG_IN, HALL_SLEEP); 
 
+            bitWrite(PORTC.OUT, 0, 1); // Turn off PC0 (green LED) by setting pin high
             if (batteryVolts < minimumVoltage) {
               ++lowVoltageCount; // Increment the counter
             }
