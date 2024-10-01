@@ -261,9 +261,13 @@ void setup() {
   delay(500);
   digitalWrite(GRNLED,HIGH); // set high to turn off
 
+  
+
    /************************************************************
    *  Real Time Clock startup
    ***********************************************************/
+  Wire.begin();
+  Wire.setClock(100000);
   MCP7940setup();
   // Turn on battery backup, default is off
   MCP7940.setBattery(true); // enable battery backup mode
@@ -307,9 +311,7 @@ void setup() {
     }
   }
   
-  
-  
-  //---------------------------------------------------------------
+   //---------------------------------------------------------------
   // Enable voltage regulator to power MAX3010x heart sensor
   digitalWrite(VREG_EN, HIGH); // set low to turn off, high to turn on (~150usec to wake)
   delay(250);
@@ -342,6 +344,8 @@ void setup() {
   }
   
   digitalWrite(VREG_EN, LOW); // set low to turn off voltage regulator for MAX3010x and Hall sensor
+ 
+  
   
 
   oldday1 = oldday2 = now.day(); // Store current day's value
